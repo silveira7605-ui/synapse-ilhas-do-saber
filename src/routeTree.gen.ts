@@ -12,6 +12,9 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedIndexRouteImport } from './routes/_authenticated/index'
+import { Route as AuthenticatedNovaIlhaRouteImport } from './routes/_authenticated/nova-ilha'
+import { Route as AuthenticatedPerfilRouteImport } from './routes/_authenticated/perfil'
+import { Route as AuthenticatedRevisarRouteImport } from './routes/_authenticated/revisar'
 import { Route as AuthenticatedIlhaIdRouteImport } from './routes/_authenticated/ilha.$id'
 
 const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
@@ -28,6 +31,21 @@ const AuthenticatedIndexRoute = AuthenticatedIndexRouteImport.update({
   path: '/',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedNovaIlhaRoute = AuthenticatedNovaIlhaRouteImport.update({
+  id: '/nova-ilha',
+  path: '/nova-ilha',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedPerfilRoute = AuthenticatedPerfilRouteImport.update({
+  id: '/perfil',
+  path: '/perfil',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedRevisarRoute = AuthenticatedRevisarRouteImport.update({
+  id: '/revisar',
+  path: '/revisar',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedIlhaIdRoute = AuthenticatedIlhaIdRouteImport.update({
   id: '/ilha/$id',
   path: '/ilha/$id',
@@ -37,10 +55,16 @@ const AuthenticatedIlhaIdRoute = AuthenticatedIlhaIdRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof AuthenticatedIndexRoute
   '/auth': typeof AuthRoute
+  '/nova-ilha': typeof AuthenticatedNovaIlhaRoute
+  '/perfil': typeof AuthenticatedPerfilRoute
+  '/revisar': typeof AuthenticatedRevisarRoute
   '/ilha/$id': typeof AuthenticatedIlhaIdRoute
 }
 export interface FileRoutesByTo {
   '/auth': typeof AuthRoute
+  '/nova-ilha': typeof AuthenticatedNovaIlhaRoute
+  '/perfil': typeof AuthenticatedPerfilRoute
+  '/revisar': typeof AuthenticatedRevisarRoute
   '/': typeof AuthenticatedIndexRoute
   '/ilha/$id': typeof AuthenticatedIlhaIdRoute
 }
@@ -48,18 +72,24 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/auth': typeof AuthRoute
+  '/_authenticated/nova-ilha': typeof AuthenticatedNovaIlhaRoute
+  '/_authenticated/perfil': typeof AuthenticatedPerfilRoute
+  '/_authenticated/revisar': typeof AuthenticatedRevisarRoute
   '/_authenticated/': typeof AuthenticatedIndexRoute
   '/_authenticated/ilha/$id': typeof AuthenticatedIlhaIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/auth' | '/ilha/$id'
+  fullPaths: '/' | '/auth' | '/nova-ilha' | '/perfil' | '/revisar' | '/ilha/$id'
   fileRoutesByTo: FileRoutesByTo
-  to: '/auth' | '/' | '/ilha/$id'
+  to: '/auth' | '/nova-ilha' | '/perfil' | '/revisar' | '/' | '/ilha/$id'
   id:
     | '__root__'
     | '/_authenticated'
     | '/auth'
+    | '/_authenticated/nova-ilha'
+    | '/_authenticated/perfil'
+    | '/_authenticated/revisar'
     | '/_authenticated/'
     | '/_authenticated/ilha/$id'
   fileRoutesById: FileRoutesById
@@ -92,6 +122,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedIndexRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/nova-ilha': {
+      id: '/_authenticated/nova-ilha'
+      path: '/nova-ilha'
+      fullPath: '/nova-ilha'
+      preLoaderRoute: typeof AuthenticatedNovaIlhaRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/perfil': {
+      id: '/_authenticated/perfil'
+      path: '/perfil'
+      fullPath: '/perfil'
+      preLoaderRoute: typeof AuthenticatedPerfilRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/revisar': {
+      id: '/_authenticated/revisar'
+      path: '/revisar'
+      fullPath: '/revisar'
+      preLoaderRoute: typeof AuthenticatedRevisarRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/ilha/$id': {
       id: '/_authenticated/ilha/$id'
       path: '/ilha/$id'
@@ -103,11 +154,17 @@ declare module '@tanstack/react-router' {
 }
 
 interface AuthenticatedRouteRouteChildren {
+  AuthenticatedNovaIlhaRoute: typeof AuthenticatedNovaIlhaRoute
+  AuthenticatedPerfilRoute: typeof AuthenticatedPerfilRoute
+  AuthenticatedRevisarRoute: typeof AuthenticatedRevisarRoute
   AuthenticatedIndexRoute: typeof AuthenticatedIndexRoute
   AuthenticatedIlhaIdRoute: typeof AuthenticatedIlhaIdRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
+  AuthenticatedNovaIlhaRoute: AuthenticatedNovaIlhaRoute,
+  AuthenticatedPerfilRoute: AuthenticatedPerfilRoute,
+  AuthenticatedRevisarRoute: AuthenticatedRevisarRoute,
   AuthenticatedIndexRoute: AuthenticatedIndexRoute,
   AuthenticatedIlhaIdRoute: AuthenticatedIlhaIdRoute,
 }
