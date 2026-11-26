@@ -4,7 +4,7 @@ import { Kip } from "@/components/Kip";
 import { cards, rescue, getIsland } from "@/lib/store";
 
 export const Route = createFileRoute("/revisar")({
-  validateSearch: (s: Record<string, unknown>): { ilha?: string } => (typeof s.ilha === "string" ? { ilha: s.ilha } : {}),
+  validateSearch: (s: Record<string, unknown>): { ilha?: string } => (typeof s["ilha"] === "string" ? { ilha: s["ilha"] } : {}),
   head: () => ({ meta: [{ title: "Revisar hoje — Synapse" }, { name: "description", content: "Revise suas cartas do dia com o Kip." }, { property: "og:title", content: "Revisar hoje — Synapse" }, { property: "og:description", content: "Revise suas cartas do dia com o Kip." }] }),
   component: Review,
 });
