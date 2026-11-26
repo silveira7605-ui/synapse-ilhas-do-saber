@@ -145,3 +145,7 @@
 .face { backface-visibility: hidden; }
 .back { transform: rotateY(180deg); }
 
+
+.google-btn { background: #131314; border-color: #8E918F; color: #E3E3E3; font-family: "Google Sans", var(--font-sans); }
+@keyframes born { 0% { transform: translate(-50%,-50%) scale(0) rotate(-20deg); opacity: 0 } 60% { transform: translate(-50%,-50%) scale(1.25) } 100% { transform: translate(-50%,-50%) scale(1); opacity: 1 } }
+.animate-born { animation: born 1.2s cubic-bezier(.3,1.6,.5,1) both; }

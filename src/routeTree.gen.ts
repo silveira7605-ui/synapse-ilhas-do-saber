@@ -9,122 +9,115 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as IndexRouteImport } from './routes/index'
-import { Route as NovaIlhaRouteImport } from './routes/nova-ilha'
-import { Route as PerfilRouteImport } from './routes/perfil'
-import { Route as RevisarRouteImport } from './routes/revisar'
-import { Route as IlhaIdRouteImport } from './routes/ilha.$id'
+import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
+import { Route as AuthRouteImport } from './routes/auth'
+import { Route as AuthenticatedIndexRouteImport } from './routes/_authenticated/index'
+import { Route as AuthenticatedIlhaIdRouteImport } from './routes/_authenticated/ilha.$id'
 
-const IndexRoute = IndexRouteImport.update({
+const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
+  id: '/_authenticated',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthRoute = AuthRouteImport.update({
+  id: '/auth',
+  path: '/auth',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthenticatedIndexRoute = AuthenticatedIndexRouteImport.update({
   id: '/',
   path: '/',
-  getParentRoute: () => rootRouteImport,
+  getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
-const NovaIlhaRoute = NovaIlhaRouteImport.update({
-  id: '/nova-ilha',
-  path: '/nova-ilha',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const PerfilRoute = PerfilRouteImport.update({
-  id: '/perfil',
-  path: '/perfil',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const RevisarRoute = RevisarRouteImport.update({
-  id: '/revisar',
-  path: '/revisar',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const IlhaIdRoute = IlhaIdRouteImport.update({
+const AuthenticatedIlhaIdRoute = AuthenticatedIlhaIdRouteImport.update({
   id: '/ilha/$id',
   path: '/ilha/$id',
-  getParentRoute: () => rootRouteImport,
+  getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 
 export interface FileRoutesByFullPath {
-  '/': typeof IndexRoute
-  '/nova-ilha': typeof NovaIlhaRoute
-  '/perfil': typeof PerfilRoute
-  '/revisar': typeof RevisarRoute
-  '/ilha/$id': typeof IlhaIdRoute
+  '/': typeof AuthenticatedIndexRoute
+  '/auth': typeof AuthRoute
+  '/ilha/$id': typeof AuthenticatedIlhaIdRoute
 }
 export interface FileRoutesByTo {
-  '/': typeof IndexRoute
-  '/nova-ilha': typeof NovaIlhaRoute
-  '/perfil': typeof PerfilRoute
-  '/revisar': typeof RevisarRoute
-  '/ilha/$id': typeof IlhaIdRoute
+  '/auth': typeof AuthRoute
+  '/': typeof AuthenticatedIndexRoute
+  '/ilha/$id': typeof AuthenticatedIlhaIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
-  '/': typeof IndexRoute
-  '/nova-ilha': typeof NovaIlhaRoute
-  '/perfil': typeof PerfilRoute
-  '/revisar': typeof RevisarRoute
-  '/ilha/$id': typeof IlhaIdRoute
+  '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
+  '/auth': typeof AuthRoute
+  '/_authenticated/': typeof AuthenticatedIndexRoute
+  '/_authenticated/ilha/$id': typeof AuthenticatedIlhaIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/nova-ilha' | '/perfil' | '/revisar' | '/ilha/$id'
+  fullPaths: '/' | '/auth' | '/ilha/$id'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/nova-ilha' | '/perfil' | '/revisar' | '/ilha/$id'
-  id: '__root__' | '/' | '/nova-ilha' | '/perfil' | '/revisar' | '/ilha/$id'
+  to: '/auth' | '/' | '/ilha/$id'
+  id:
+    | '__root__'
+    | '/_authenticated'
+    | '/auth'
+    | '/_authenticated/'
+    | '/_authenticated/ilha/$id'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
-  IndexRoute: typeof IndexRoute
-  NovaIlhaRoute: typeof NovaIlhaRoute
-  PerfilRoute: typeof PerfilRoute
-  RevisarRoute: typeof RevisarRoute
-  IlhaIdRoute: typeof IlhaIdRoute
+  AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
+  AuthRoute: typeof AuthRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/': {
-      id: '/'
+    '/_authenticated': {
+      id: '/_authenticated'
+      path: ''
+      fullPath: '/'
+      preLoaderRoute: typeof AuthenticatedRouteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/auth': {
+      id: '/auth'
+      path: '/auth'
+      fullPath: '/auth'
+      preLoaderRoute: typeof AuthRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/_authenticated/': {
+      id: '/_authenticated/'
       path: '/'
       fullPath: '/'
-      preLoaderRoute: typeof IndexRouteImport
-      parentRoute: typeof rootRouteImport
+      preLoaderRoute: typeof AuthenticatedIndexRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
     }
-    '/nova-ilha': {
-      id: '/nova-ilha'
-      path: '/nova-ilha'
-      fullPath: '/nova-ilha'
-      preLoaderRoute: typeof NovaIlhaRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/perfil': {
-      id: '/perfil'
-      path: '/perfil'
-      fullPath: '/perfil'
-      preLoaderRoute: typeof PerfilRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/revisar': {
-      id: '/revisar'
-      path: '/revisar'
-      fullPath: '/revisar'
-      preLoaderRoute: typeof RevisarRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/ilha/$id': {
-      id: '/ilha/$id'
+    '/_authenticated/ilha/$id': {
+      id: '/_authenticated/ilha/$id'
       path: '/ilha/$id'
       fullPath: '/ilha/$id'
-      preLoaderRoute: typeof IlhaIdRouteImport
-      parentRoute: typeof rootRouteImport
+      preLoaderRoute: typeof AuthenticatedIlhaIdRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
     }
   }
 }
 
+interface AuthenticatedRouteRouteChildren {
+  AuthenticatedIndexRoute: typeof AuthenticatedIndexRoute
+  AuthenticatedIlhaIdRoute: typeof AuthenticatedIlhaIdRoute
+}
+
+const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
+  AuthenticatedIndexRoute: AuthenticatedIndexRoute,
+  AuthenticatedIlhaIdRoute: AuthenticatedIlhaIdRoute,
+}
+
+const AuthenticatedRouteRouteWithChildren =
+  AuthenticatedRouteRoute._addFileChildren(AuthenticatedRouteRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
-  IndexRoute: IndexRoute,
-  NovaIlhaRoute: NovaIlhaRoute,
-  PerfilRoute: PerfilRoute,
-  RevisarRoute: RevisarRoute,
-  IlhaIdRoute: IlhaIdRoute,
+  AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
+  AuthRoute: AuthRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
