@@ -71,3 +71,11 @@ export function islandPosition(index: number) {
   const cols = [26, 72, 50];
   return { map_x: cols[index % 3]!, map_y: 90 + index * 150 };
 }
+
+export const ISLAND_COLORS_DEFAULT = [
+  "var(--isle-green)",
+  "var(--isle-amber)",
+  "var(--isle-blue)",
+  "var(--isle-pink)",
+  "var(--isle-violet)",
+];
