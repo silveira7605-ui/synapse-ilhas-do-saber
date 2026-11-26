@@ -10,33 +10,73 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as NovaIlhaRouteImport } from './routes/nova-ilha'
+import { Route as PerfilRouteImport } from './routes/perfil'
+import { Route as RevisarRouteImport } from './routes/revisar'
+import { Route as IlhaIdRouteImport } from './routes/ilha.$id'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const NovaIlhaRoute = NovaIlhaRouteImport.update({
+  id: '/nova-ilha',
+  path: '/nova-ilha',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PerfilRoute = PerfilRouteImport.update({
+  id: '/perfil',
+  path: '/perfil',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const RevisarRoute = RevisarRouteImport.update({
+  id: '/revisar',
+  path: '/revisar',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const IlhaIdRoute = IlhaIdRouteImport.update({
+  id: '/ilha/$id',
+  path: '/ilha/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/nova-ilha': typeof NovaIlhaRoute
+  '/perfil': typeof PerfilRoute
+  '/revisar': typeof RevisarRoute
+  '/ilha/$id': typeof IlhaIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/nova-ilha': typeof NovaIlhaRoute
+  '/perfil': typeof PerfilRoute
+  '/revisar': typeof RevisarRoute
+  '/ilha/$id': typeof IlhaIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/nova-ilha': typeof NovaIlhaRoute
+  '/perfil': typeof PerfilRoute
+  '/revisar': typeof RevisarRoute
+  '/ilha/$id': typeof IlhaIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths: '/' | '/nova-ilha' | '/perfil' | '/revisar' | '/ilha/$id'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to: '/' | '/nova-ilha' | '/perfil' | '/revisar' | '/ilha/$id'
+  id: '__root__' | '/' | '/nova-ilha' | '/perfil' | '/revisar' | '/ilha/$id'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  NovaIlhaRoute: typeof NovaIlhaRoute
+  PerfilRoute: typeof PerfilRoute
+  RevisarRoute: typeof RevisarRoute
+  IlhaIdRoute: typeof IlhaIdRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -48,11 +88,43 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/nova-ilha': {
+      id: '/nova-ilha'
+      path: '/nova-ilha'
+      fullPath: '/nova-ilha'
+      preLoaderRoute: typeof NovaIlhaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/perfil': {
+      id: '/perfil'
+      path: '/perfil'
+      fullPath: '/perfil'
+      preLoaderRoute: typeof PerfilRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/revisar': {
+      id: '/revisar'
+      path: '/revisar'
+      fullPath: '/revisar'
+      preLoaderRoute: typeof RevisarRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/ilha/$id': {
+      id: '/ilha/$id'
+      path: '/ilha/$id'
+      fullPath: '/ilha/$id'
+      preLoaderRoute: typeof IlhaIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  NovaIlhaRoute: NovaIlhaRoute,
+  PerfilRoute: PerfilRoute,
+  RevisarRoute: RevisarRoute,
+  IlhaIdRoute: IlhaIdRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
