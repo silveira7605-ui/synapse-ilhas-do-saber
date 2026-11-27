@@ -8,6 +8,13 @@
       "when": 1795670914487,
       "tag": "0000_synapse_schema",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1795746557889,
+      "tag": "0001_safe_review_and_ai_access",
+      "breakpoints": true
     }
   ]
 }

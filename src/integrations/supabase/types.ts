@@ -14,6 +14,24 @@ export type Database = {
   }
   public: {
     Tables: {
+      ai_access_blocks: {
+        Row: {
+          created_at: string
+          message: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          message: string
+          user_id?: string
+        }
+        Update: {
+          created_at?: string
+          message?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       card_states: {
         Row: {
           card_id: string
@@ -256,7 +274,12 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      owns_card: { Args: { _card: string }; Returns: boolean }
       owns_island: { Args: { _island: string }; Returns: boolean }
+      record_review: {
+        Args: { _card: string; _rating: number; _review_id: string }
+        Returns: undefined
+      }
     }
     Enums: {
       [_ in never]: never

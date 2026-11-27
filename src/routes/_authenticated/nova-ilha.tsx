@@ -1,12 +1,16 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
+import { useServerFn } from "@tanstack/react-start";
+import { useQueryClient } from "@tanstack/react-query";
+import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { Kip } from "@/components/Kip";
 import { KipMessage } from "@/components/KipMessage";
 import { born } from "@/lib/born";
 import { islandPosition, ISLAND_COLORS_DEFAULT } from "@/lib/srs";
-import { analyzeChunk, saveIslandContent, type ChunkResult } from "@/lib/island.functions";
+import { analyzeChunk, saveIslandContent, confirmAiAccessRestored, type ChunkResult } from "@/lib/island.functions";
 import { mergeChunks } from "@/lib/merge";
+import { fileProblem, pdfProblem, MAX_IMAGES, textChunks } from "@/lib/material";
 
 export const Route = createFileRoute("/_authenticated/nova-ilha")({
   head: () => ({
@@ -22,8 +26,6 @@ export const Route = createFileRoute("/_authenticated/nova-ilha")({
 
 type PendingFile = { file: File; preview: string; kind: "pdf" | "image" };
 
-const MAX_SIZE = 15 * 1024 * 1024;
-const MAX_IMAGES = 10;
 const KIP_PHRASES = [
   "Lendo seu material... 📖",
   "Construindo a ilha... 🏝️",
@@ -33,44 +35,46 @@ const KIP_PHRASES = [
 
 function NewIslandPage() {
   const nav = useNavigate();
+  const qc = useQueryClient();
+  const analyze = useServerFn(analyzeChunk);
+  const save = useServerFn(saveIslandContent);
+  const restoreAccess = useServerFn(confirmAiAccessRestored);
   const [text, setText] = useState("");
   const [files, setFiles] = useState<PendingFile[]>([]);
   const [name, setName] = useState("");
   const [busy, setBusy] = useState(false);
   const [phase, setPhase] = useState(0);
   const [error, setError] = useState<string | null>(null);
+  const [denied, setDenied] = useState(false);
+  const [validating, setValidating] = useState(false);
+  const validationLock = useRef(false);
+  const creationLock = useRef(false);
+  const filesRef = useRef(files);
+  filesRef.current = files;
+  useEffect(() => () => { for (const f of filesRef.current) if (f.preview) URL.revokeObjectURL(f.preview); }, []);
   const photoInput = useRef<HTMLInputElement>(null);
   const cameraInput = useRef<HTMLInputElement>(null);
   const pdfInput = useRef<HTMLInputElement>(null);
 
-  function addFiles(list: FileList | null, kind: "pdf" | "image") {
-    if (!list) return;
+  async function addFiles(list: FileList | null, kind: "pdf" | "image") {
+    if (!list || validationLock.current) return;
+    validationLock.current = true;
+    setValidating(true);
     const incoming = Array.from(list);
     const valid: PendingFile[] = [];
+    setError(null);
+    try {
     for (const f of incoming) {
-      if (f.size > MAX_SIZE) {
-        setError(`O arquivo "${f.name}" é muito grande. O limite é 15 MB por arquivo. 💕`);
-        continue;
-      }
-      if (kind === "pdf" && f.type !== "application/pdf") {
-        setError(`"${f.name}" não é um PDF. Só aceito PDFs nesse botão. 📄`);
-        continue;
-      }
-      if (kind === "image" && !f.type.startsWith("image/")) {
-        setError(`"${f.name}" não é uma imagem. 📷`);
-        continue;
+      const problem = fileProblem(f, kind) ?? (kind === "pdf" ? await pdfProblem(await f.arrayBuffer()) : null);
+      if (problem) { setError(problem); continue; }
+      if (kind === "image" && filesRef.current.filter((f) => f.kind === "image").length + valid.length >= MAX_IMAGES) {
+        setError(`Você pode enviar até ${MAX_IMAGES} fotos. 💕`); continue;
       }
       const preview = kind === "pdf" ? "" : URL.createObjectURL(f);
       valid.push({ file: f, preview, kind });
     }
-    if (kind === "image") {
-      const existing = files.filter((f) => f.kind === "image");
-      if (existing.length + valid.length > MAX_IMAGES) {
-        setError(`Você pode enviar até ${MAX_IMAGES} fotos. 💕`);
-        valid.splice(MAX_IMAGES - existing.length);
-      }
-    }
     setFiles((prev) => [...prev, ...valid]);
+    } finally { validationLock.current = false; setValidating(false); }
   }
 
   function removeFile(idx: number) {
@@ -82,15 +86,22 @@ function NewIslandPage() {
   }
 
   async function createIsland() {
+    if (creationLock.current || validating || denied) return;
     if (!text.trim() && files.length === 0) {
       setError("Cola um texto, manda um PDF ou uma foto pra eu começar! 🌱");
       return;
     }
     setBusy(true);
+    creationLock.current = true;
     setError(null);
     setPhase(0);
 
+    let createdId: string | null = null;
+    const uploadedPaths: string[] = [];
+    let completed = false;
     try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Entre na sua conta para criar uma ilha 💕");
       // 1. Create island row
       const { data: island, error: ie } = await supabase
         .from("islands")
@@ -98,12 +109,10 @@ function NewIslandPage() {
         .select()
         .single();
       if (ie || !island) throw new Error("island");
+      createdId = island.id;
 
       // 2. Upload files to private storage and create source rows
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-      const userId = user!.id;
+      const userId = user.id;
       const fileSources: { path: string; mime: string; name: string }[] = [];
       const sourceRows: { island_id: string; kind: string; file_path: string | null; raw_text: string | null; status: string }[] = [];
 
@@ -112,6 +121,7 @@ function NewIslandPage() {
         const path = `${userId}/${island.id}/${crypto.randomUUID()}${ext}`;
         const { error: ue } = await supabase.storage.from("materials").upload(path, f.file);
         if (ue) throw new Error("upload");
+        uploadedPaths.push(path);
         fileSources.push({ path, mime: f.file.type, name: f.file.name });
         sourceRows.push({ island_id: island.id, kind: f.kind, file_path: path, raw_text: null, status: "processing" });
       }
@@ -123,41 +133,25 @@ function NewIslandPage() {
         if (se) throw new Error("source");
       }
 
-      setPhase(0);
-      const phraseTimer = setInterval(() => setPhase((p) => Math.min(p + 1, KIP_PHRASES.length - 1)), 4000);
-
       // 3. Run AI analysis in chunks
       const chunks: ChunkResult[] = [];
-      const textChunk = text.trim().slice(0, 12000);
-
-      // Chunk 1: text (if any) + first few images
-      const firstFiles = fileSources.slice(0, 4);
-      const remainingFiles = fileSources.slice(4);
-
-      if (textChunk || firstFiles.length) {
-        const r = await analyzeChunk({ data: { text: textChunk, files: firstFiles } });
-        if (r.ok) chunks.push(r.result);
+      const texts = textChunks(text);
+      const batches = Math.max(texts.length, Math.ceil(fileSources.length / 3));
+      for (let i = 0; i < batches; i++) {
+        const r = await analyze({ data: { text: texts[i] ?? "", files: fileSources.slice(i * 3, i * 3 + 3) } });
+        if (!r.ok) { setDenied(r.reason === "denied"); throw new Error(r.message); }
+        chunks.push(r.result);
       }
-
-      // Additional chunks for remaining files (3 images per chunk)
-      for (let i = 0; i < remainingFiles.length; i += 3) {
-        const batch = remainingFiles.slice(i, i + 3);
-        const r = await analyzeChunk({ data: { text: "", files: batch } });
-        if (r.ok) chunks.push(r.result);
-      }
-
-      clearInterval(phraseTimer);
-      setPhase(KIP_PHRASES.length - 1);
-
-      if (!chunks.length) throw new Error("ai");
+      setPhase(1);
 
       // 4. Merge results
       const merged = mergeChunks(chunks);
-      const bestName = chunks[0]!.island_name || name.trim() || "Nova ilha";
-      const bestEmoji = chunks[0]!.emoji || "🏝️";
+      const bestName = name.trim() || chunks[0]?.island_name || "Nova ilha";
+      const bestEmoji = chunks[0]?.emoji || "🏝️";
 
       // 5. Save concepts + cards + initial card states
-      await saveIslandContent({
+      setPhase(2);
+      await save({
         data: {
           islandId: island.id,
           name: bestName,
@@ -168,28 +162,38 @@ function NewIslandPage() {
       });
 
       // 6. Update map position
-      const { count } = await supabase.from("islands").select("id", { count: "exact", head: true });
-      const pos = islandPosition(count ?? 0);
+      const { data: positions, error: pe } = await supabase.from("islands").select("map_y").neq("id", island.id).order("map_y", { ascending: false }).limit(1);
+      if (pe) throw new Error("save");
+      const count = positions?.[0] ? Math.floor((positions[0].map_y - 90) / 150) + 1 : 0;
+      const pos = islandPosition(count);
       const colorIdx = (count ?? 0) % 5;
       const colorVal = ISLAND_COLORS_DEFAULT[colorIdx] ?? "var(--isle-violet)";
-      const { data: updated } = await supabase
+      const { data: updated, error: updateError } = await supabase
         .from("islands")
         .update({ map_x: pos.map_x, map_y: pos.map_y, color: colorVal })
         .eq("id", island.id)
         .select("id")
         .single();
+      if (updateError) throw new Error("save");
 
+      completed = true;
+      setPhase(3);
+      await qc.invalidateQueries({ queryKey: ["islands"] });
+      await qc.invalidateQueries({ queryKey: ["cards"] });
       born.id = updated?.id ?? island.id;
       nav({ to: "/" });
-    } catch (e: any) {
-      console.error("createIsland failed", e);
-      const msg = e?.message === "credits"
-        ? "As minhas estrelinhas de IA acabaram por hoje 🌟 Tenta de novo mais tarde, tá?"
-        : e?.message === "busy"
-        ? "A IA tá muito ocupada agora 🌊 Dá uns minutinhos e tenta de novo?"
-        : "Não consegui construir a ilha agora 🌱 Tenta de novo?";
-      setError(msg);
+    } catch (e: unknown) {
+      const message = e instanceof Error ? e.message : "";
+      const internal = ["island", "upload", "source", "save", "ai"];
+      setError(message && !internal.includes(message) && !message.includes("Server") ? message : "Não consegui construir a ilha agora 🌱 Seu material continua aqui. Tenta de novo?");
+      if (createdId && !completed) {
+        await supabase.from("sources").update({ status: "failed" }).eq("island_id", createdId);
+        if (uploadedPaths.length) await supabase.storage.from("materials").remove(uploadedPaths);
+        await supabase.from("islands").delete().eq("id", createdId);
+        await qc.invalidateQueries({ queryKey: ["islands"] });
+      }
     } finally {
+      creationLock.current = false;
       setBusy(false);
     }
   }
@@ -322,15 +326,19 @@ function NewIslandPage() {
         )}
 
         {error && (
-          <div className="rounded-2xl bg-card px-4 py-3 text-center text-sm font-bold">{error}</div>
+          <div role="alert" className="rounded-2xl bg-card px-4 py-3 text-center text-sm font-bold">
+            {error}
+            {denied ? <Button variant="secondary" className="mt-3 h-auto w-full rounded-3xl py-3" onClick={async () => { try { await restoreAccess(); setDenied(false); setError(null); } catch { setError("Não consegui conferir meu acesso agora 🌊"); } }}>O responsável já restabeleceu o acesso</Button>
+            : <Button className="mt-3 h-auto w-full rounded-3xl py-3" disabled={validating} onClick={createIsland}>Tentar de novo</Button>}
+          </div>
         )}
 
         <button
           onClick={createIsland}
-          disabled={busy || (!text.trim() && files.length === 0)}
+          disabled={busy || validating || denied || (!text.trim() && files.length === 0)}
           className="w-full rounded-3xl bg-gold py-5 font-display text-xl font-bold text-navy shadow-xl active:scale-95 disabled:opacity-50"
         >
-          🏝️ Criar minha ilha
+          {validating ? "Conferindo seu arquivo... 📄" : "🏝️ Criar minha ilha"}
         </button>
       </div>
     </div>

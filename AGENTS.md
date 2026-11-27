@@ -28,3 +28,10 @@ use the editor.
   own key and store it in Secrets.
 - **Secrets.** Lovable manages them. Do not put secret values in the repo.
 <!-- LOVABLE:END -->
+
+## Application rules
+- Keep study scheduling, fog and session selection in pure tested helpers; this makes the study rules independently verifiable.
+- Record reviews with the authenticated transactional database RPC and a stable review ID; state and history must succeed together without duplicate taps.
+- Validate upload type, bytes and PDF page count on both client and server; browser validation alone is not a security boundary.
+- Analyze material sequentially and stop on the first failure; never save an island from an incomplete subset of its sources.
+- Persist provider access denials per user and require an explicit restored-access confirmation before fresh AI work; Worker globals cannot preserve blocks.

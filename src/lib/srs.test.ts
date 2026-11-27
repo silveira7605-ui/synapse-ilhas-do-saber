@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { schedule, fogLevel, overduePercent, crossMix, streak } from "./srs";
+import { schedule, fogLevel, overduePercent, crossMix, streak, sessionCards } from "./srs";
 
 const fresh = { interval_days: 0, reps: 0, lapses: 0, last_review_at: null };
 const now = new Date("2026-11-26T12:00:00Z");
@@ -53,8 +53,24 @@ describe("desafio cruzado", () => {
     ];
     const out = crossMix(cards, 12);
     expect(out).toHaveLength(12);
-    for (let i = 1; i < out.length; i++) expect(out[i]!.island_id).not.toBe(out[i - 1]!.island_id);
-    expect(out[0]!.due).toBe(true);
+    for (let i = 1; i < out.length; i++) expect(out[i]?.island_id).not.toBe(out[i - 1]?.island_id);
+    expect(out[0]?.due).toBe(true);
+  });
+  it("inclui pelo menos três ilhas mesmo quando duas têm muito mais cartas", () => {
+    const cards = [...Array.from({ length: 30 }, () => ({ island_id: "a", due: true })), ...Array.from({ length: 30 }, () => ({ island_id: "b", due: true })), { island_id: "c", due: false }];
+    const out = sessionCards(cards, true);
+    expect(out).toHaveLength(12);
+    expect(new Set(out.map((c) => c.island_id)).size).toBe(3);
+  });
+  it("sessão normal limita a 20 cartas vencidas", () => {
+    const cards = Array.from({ length: 35 }, (_, i) => ({ island_id: "a", due: i < 25 }));
+    expect(sessionCards(cards)).toHaveLength(20);
+    expect(sessionCards(cards).every((c) => c.due)).toBe(true);
+  });
+  it("desafio usa cartas em dia quando não há vencidas", () => {
+    const cards = Array.from({ length: 12 }, (_, i) => ({ island_id: String(i % 3), due: false }));
+    expect(sessionCards(cards, true)).toHaveLength(12);
+    expect(sessionCards(cards)).toHaveLength(0);
   });
 });
 

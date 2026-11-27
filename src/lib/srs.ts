@@ -12,7 +12,7 @@ export function schedule(prev: CardState, rating: Rating, now = new Date()) {
     interval_days = prev.last_review_at === null || prev.interval_days <= 0 ? 2 : round(prev.interval_days * 1.2);
   } else {
     reps += 1;
-    interval_days = reps <= ACERTEI_STEPS.length ? ACERTEI_STEPS[reps - 1]! : round(prev.interval_days * 2.2);
+    interval_days = ACERTEI_STEPS[reps - 1] ?? round(prev.interval_days * 2.2);
   }
   return {
     interval_days, reps, lapses,
@@ -43,16 +43,26 @@ export function crossMix<T extends { island_id: string; due: boolean }>(cards: T
   for (const c of cards) groups.set(c.island_id, [...(groups.get(c.island_id) ?? []), c]);
   for (const g of groups.values()) g.sort((a, b) => Number(b.due) - Number(a.due));
   const out: T[] = [];
+  const used = new Map<string, number>();
   let last = "";
   while (out.length < size) {
     const options = [...groups.entries()].filter(([id, g]) => g.length && id !== last);
     if (!options.length) break;
-    options.sort((a, b) => Number(b[1][0]!.due) - Number(a[1][0]!.due) || b[1].length - a[1].length);
-    const [id, g] = options[0]!;
-    out.push(g.shift()!);
+    options.sort((a, b) => (used.get(a[0]) ?? 0) - (used.get(b[0]) ?? 0) || Number(b[1][0]?.due) - Number(a[1][0]?.due) || b[1].length - a[1].length);
+    const option = options[0];
+    if (!option) break;
+    const [id, g] = option;
+    const card = g.shift();
+    if (!card) break;
+    out.push(card);
+    used.set(id, (used.get(id) ?? 0) + 1);
     last = id;
   }
   return out;
+}
+
+export function sessionCards<T extends { island_id: string; due: boolean }>(cards: T[], cross = false) {
+  return cross ? crossMix(cards, 12) : cards.filter((c) => c.due).slice(0, 20);
 }
 
 const dayKey = (d: Date) => `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
@@ -69,7 +79,7 @@ export function streak(dates: (string | Date)[], now = new Date()) {
 /** Spread island positions on the map without overlap: zig-zag rows. */
 export function islandPosition(index: number) {
   const cols = [26, 72, 50];
-  return { map_x: cols[index % 3]!, map_y: 90 + index * 150 };
+  return { map_x: cols[index % 3] ?? 50, map_y: 90 + index * 150 };
 }
 
 export const ISLAND_COLORS_DEFAULT = [
